@@ -25,7 +25,7 @@ class Author
     private $name;
 
     /**
-     * @ORM\OneToMany(targetEntity=Article::class, mappedBy="author")
+     * @ORM\ManyToMany(targetEntity=Article::class, mappedBy="authors")
      */
     private $articles;
 
@@ -63,7 +63,7 @@ class Author
     {
         if (!$this->articles->contains($article)) {
             $this->articles[] = $article;
-            $article->setAuthor($this);
+            $article->addAuthor($this);
         }
 
         return $this;
@@ -73,12 +73,17 @@ class Author
     {
         if ($this->articles->contains($article)) {
             $this->articles->removeElement($article);
-            // set the owning side to null (unless already changed)
-            if ($article->getAuthor() === $this) {
-                $article->setAuthor(null);
-            }
+            $article->removeAuthor($this);
         }
 
         return $this;
+    }
+
+    public function toArray(): ?array
+    {
+        return [
+            'id' => $this->getId(),
+            'name' => $this->getName()
+        ];
     }
 }

@@ -28,13 +28,15 @@ class AppFixtures extends Fixture
         for ($i = 0; $i < $numberOfPosts; $i++) {
             $article = new Article();
             $rand = rand(0, count($authors)-1);
+            $rand2 = rand(0, count($authors)-1);
             $date = $this->randomDateInRange(new DateTime('2019-01-01'), new DateTime());
             
             $loremGenerator = new \Badcow\LoremIpsum\Generator();
-            $article->setText(implode(" ", $loremGenerator->getSentences(5)));
-            $article->setTitle(implode(" ", $loremGenerator->getSentences(1)));
+            $article->setText(implode(" ", $loremGenerator->getSentences(3)));
+            $article->setTitle(implode(" ", $loremGenerator->getRandomWords(3)));
             $article->setCreatedAt($date);
-            $article->setAuthor($authors[$rand]);
+            $article->addAuthor($authors[$rand]);
+            $article->addAuthor($authors[$rand2]);
             $manager->persist($article);
         }
         $manager->flush();

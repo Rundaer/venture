@@ -14,7 +14,7 @@ use Symfony\Component\Validator\Constraints\IsNull;
 
 class VentureController extends AbstractController
 {
-    const QUERY_POSIBILITIES = ['limit', 'orderBy', 'startDate', 'endDate'];
+    const QUERY_POSIBILITIES = ['limit', 'orderBy', 'startDate', 'endDate', 'type'];
 
     /**
      * @Route("/articles/", name="venture_getArticles")
@@ -22,22 +22,23 @@ class VentureController extends AbstractController
      */
     public function getArticles()
     {
-        $jsonArticles = [];
+        $result = [];
         $em = $this->getDoctrine()->getManager();
         $articles = $em
             ->getRepository(Article::class)
             ->findAll();
 
         foreach ($articles as $article) {
-            $jsonArticles[] = [
+            $result[] = [
                 'id' => $article->getId(),
                 'title' => $article->getTitle(),
                 'text' => $article->getText()
             ];
         }
         
+
         $response = new Response();
-        $response->setContent(json_encode($jsonArticles));
+        $response->setContent(json_encode($result));
         $response->headers->set('Content-Type', 'application/json');
         
         return $response;
@@ -56,15 +57,16 @@ class VentureController extends AbstractController
                 'id' => $id
             ]);
 
-        $author = $article->getAuthor()->getName();
-
         $result = [
             'id' => $article->getId(),
             'title' => $article->getTitle(),
             'text' => $article->getText(),
-            'date' => $article->getCreatedAt()->format('d/m/Y'),
-            'author' => $author
+            'date' => $article->getCreatedAt()->format('Y/m/d'),
         ];
+
+        foreach ($article->getAuthors()->getValues() as $author) {
+            $result['authors'][] = $author->toArray();
+        }
         
         $response = new Response();
         $response->setContent(json_encode($result));
@@ -79,64 +81,30 @@ class VentureController extends AbstractController
     */
     public function getAuthors(AuthorRepository $authorRepository, ArticleRepository $articleRepository, Request $request)
     {
-        $result = [
-            'msg' => 'nothing'
-        ];
-        $anyProperValue = true;
-
-        // Checks for any url query
+        $result = [];
         if ($request->getQueryString()) {
-            $queries = explode('&', $request->getQueryString());
-            foreach ($queries as $query) {
-                $var = explode('=', $query);
-                if (in_array($var[0], self::QUERY_POSIBILITIES)) {
-                    $anyProperValue = false;
-                }
-            }
+            $queryForNonValues = $this->variablesForQueryString($request->getQueryString());
+        } else {
+            $queryForNonValues = true;
         }
-        
+
         // if any of possible query variables else get all
-        if ($anyProperValue) {
+        if ($queryForNonValues) {
             $authors = $authorRepository->findAll();
 
             foreach ($authors as $author) {
-                $articlesOfAuthor = $author->getArticles()->getValues();
-                $articles = [];
-    
-                foreach ($articlesOfAuthor as $article) {
-                    $articles[] = [
-                        'id' => $article->getId(),
-                        'title' => $article->getTitle(),
-                        'text' => $article->getText(),
-                        'date' => $article->getCreatedAt()->format('d/m/Y'),
-                    ];
-                }
-    
                 $result[] = [
                     'id' => $author->getId(),
                     'name' => $author->getName(),
-                    'articles' => $articles,
+                    'articles' => $author->getArticles()
                 ];
             }
         } elseif ($request->get('type') == 'best') {
-            $articles = $articleRepository->findByDate($request->get('startDate'), $request->get('endDate'));
-            if (!empty($articles)) {
-                $authors = [];
-
-                foreach ($articles as $article) {
-                    $author = $article->getAuthor();
-                    if (!isset($authors[$author->getId()])) {
-                        $authors[$author->getId()]['numberOfArticles'] = 1;
-                        $authors[$author->getId()]['name'] = $author->getName();
-                    } else {
-                        $authors[$author->getId()]['numberOfArticles'] += 1;
-                    }
-                }
-
-                $sort = array_reverse($this->multisort($authors, ['numberOfArticles']));
-
-                $result = [$sort[0],$sort[1],$sort[2]];
-            }
+            $result = $authorRepository->findTheBestOnes(
+                $request->get('startDate'),
+                $request->get('endDate'),
+                $request->get('limit')
+            );
         }
 
         $response = new Response();
@@ -153,7 +121,6 @@ class VentureController extends AbstractController
     public function getAuthorById(int $id)
     {
         $result = [];
-        $jsonArticles = [];
         $em = $this->getDoctrine()->getManager();
 
         $author = $em
@@ -164,18 +131,21 @@ class VentureController extends AbstractController
 
         $articles = $author->getArticles()->getValues();
 
+        
+
+        $result = [
+                'id' => $author->getId(),
+                'name' => $author->getName()
+            ];
+
         foreach ($articles as $article) {
-            $jsonArticles[$article->getId()] = [
+            $result['articles'][] = [
+                'id'    => $article->getId(),
                 'title' => $article->getTitle(),
-                'text' => $article->getText(),
-                'date' => $article->getCreatedAt()->format('d/m/Y'),
+                'text'  => $article->getText(),
+                'date'  => $article->getCreatedAt()->format('d/m/Y'),
             ];
         }
-
-        $result[$author->getId()] = [
-                'name' => $author->getName(),
-                'articles' => $jsonArticles
-            ];
         
         $response = new Response();
         $response->setContent(json_encode($result));
@@ -202,7 +172,8 @@ class VentureController extends AbstractController
             ]);
 
         foreach ($author->getArticles()->getValues() as $article) {
-            $result[$article->getId()] = [
+            $result[] = [
+                'id' => $article->getId(),
                 'title' => $article->getTitle(),
                 'text' => $article->getText(),
                 'date' => $article->getCreatedAt()->format('d/m/Y'),
@@ -230,5 +201,20 @@ class VentureController extends AbstractController
         eval($evalstring);
     
         return $array;
+    }
+
+    public function variablesForQueryString(string $queryString): bool
+    {
+        $checkForVars = true;
+        // Checks for any url query
+        $queries = explode('&', $queryString);
+        foreach ($queries as $query) {
+            $var = explode('=', $query);
+            if (in_array($var[0], self::QUERY_POSIBILITIES)) {
+                $checkForVars = false;
+            }
+        }
+
+        return $checkForVars;
     }
 }
