@@ -14,8 +14,6 @@ use Symfony\Component\Validator\Constraints\IsNull;
 
 class VentureController extends AbstractController
 {
-    const QUERY_POSIBILITIES = ['limit', 'orderBy', 'startDate', 'endDate', 'type'];
-
     /**
      * @Route("/articles/", name="venture_getArticles")
      *
@@ -79,7 +77,7 @@ class VentureController extends AbstractController
      * @Route("/authors/", name="venture_getAuthors")
      *
     */
-    public function getAuthors(AuthorRepository $authorRepository, ArticleRepository $articleRepository, Request $request)
+    public function getAuthors(AuthorRepository $authorRepository, Request $request)
     {
         $result = [];
         if ($request->getQueryString()) {
@@ -93,10 +91,15 @@ class VentureController extends AbstractController
             $authors = $authorRepository->findAll();
 
             foreach ($authors as $author) {
+                $articleToArray = [];
+                foreach ($author->getArticles()->getValues() as $article) {
+                    $articleToArray[] = $article->getId();
+                }
+
                 $result[] = [
                     'id' => $author->getId(),
                     'name' => $author->getName(),
-                    'articles' => $author->getArticles()
+                    'articles' => $articleToArray
                 ];
             }
         } elseif ($request->get('type') == 'best') {
@@ -105,6 +108,19 @@ class VentureController extends AbstractController
                 $request->get('endDate'),
                 $request->get('limit')
             );
+        } else {
+            $authors = $authorRepository->findBy([], null, $request->get('limit'));
+            foreach ($authors as $author) {
+                $articleToArray = [];
+                foreach ($author->getArticles()->getValues() as $article) {
+                    $articleToArray[] = $article->getId();
+                }
+                $result[] = [
+                    'id' => $author->getId(),
+                    'name' => $author->getName(),
+                    'articles' => $articleToArray
+                ];
+            }
         }
 
         $response = new Response();
@@ -132,7 +148,6 @@ class VentureController extends AbstractController
         $articles = $author->getArticles()->getValues();
 
         
-
         $result = [
                 'id' => $author->getId(),
                 'name' => $author->getName()
@@ -187,22 +202,6 @@ class VentureController extends AbstractController
         return $response;
     }
 
-    public function multisort($array, $sort_by)
-    {
-        foreach ($array as $key => $value) {
-            $evalstring = '';
-            foreach ($sort_by as $sort_field) {
-                $tmp[$sort_field][$key] = $value[$sort_field];
-                $evalstring .= '$tmp[\'' . $sort_field . '\'], ';
-            }
-        }
-        $evalstring .= '$array';
-        $evalstring = 'array_multisort(' . $evalstring . ');';
-        eval($evalstring);
-    
-        return $array;
-    }
-
     public function variablesForQueryString(string $queryString): bool
     {
         $checkForVars = true;
@@ -210,7 +209,7 @@ class VentureController extends AbstractController
         $queries = explode('&', $queryString);
         foreach ($queries as $query) {
             $var = explode('=', $query);
-            if (in_array($var[0], self::QUERY_POSIBILITIES)) {
+            if (in_array($var[0], Author::QUERY_POSIBILITIES)) {
                 $checkForVars = false;
             }
         }

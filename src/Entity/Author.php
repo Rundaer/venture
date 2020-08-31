@@ -12,6 +12,8 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class Author
 {
+    const QUERY_POSIBILITIES = ['limit', 'startDate', 'endDate', 'type'];
+
     /**
      * @ORM\Id
      * @ORM\GeneratedValue
