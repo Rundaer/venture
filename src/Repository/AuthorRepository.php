@@ -20,10 +20,39 @@ class AuthorRepository extends ServiceEntityRepository
         parent::__construct($registry, Author::class);
     }
 
+    public function getNames()
+    {
+        return $this->createQueryBuilder('a')
+            ->select('a.id', 'a.name')
+            ->getQuery()
+            ->getResult()
+        ;
+    }
+
     public function findTheBestOnes($startDate = null, $endDate = null, $limit = null)
     {
+
+        // I have tried.. but I failed. gameORMver :D
+        // SQL RULEZ!!!!!
+
+        // $result = $this->createQueryBuilder('aut')
+        //     ->select('aut.id', 'aut.name', 'count(aut.id) as numberOfArticles')
+        //     ->from('App:Author', 'aut')
+        //     ->join('aut.articles', 'art')
+        //     ->addSelect('art')
+        //     ->groupBy('art.id')
+        // ;
+
+        // if (!is_null($startDate)) {
+        //     $result
+        //         ->where('art.createdAt > :startDate')
+        //         ->setParameter('startDate', $startDate);
+        // }
         
+        // return $result->getQuery()->getResult();
+
         //base
+        
         $conn = $this->getEntityManager()->getConnection();
         $sql = "SELECT aut.id, aut.name, count(aut.id) number_of_articles FROM article_author aa
             JOIN article art ON aa.article_id = art.id
@@ -42,7 +71,7 @@ class AuthorRepository extends ServiceEntityRepository
         }
 
         
-        $sql .= "GROUP BY aut.id ORDER BY number_of_articles DESC ";
+        $sql .= " GROUP BY aut.id ORDER BY number_of_articles DESC ";
 
         // select with limit
         if (!is_null($limit)) {
@@ -53,7 +82,6 @@ class AuthorRepository extends ServiceEntityRepository
 
         $stmt->execute();
 
-        // returns an array of arrays (i.e. a raw data set)
         return $stmt->fetchAll();
     }
 }
