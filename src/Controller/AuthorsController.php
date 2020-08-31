@@ -156,4 +156,19 @@ class AuthorsController extends AbstractController
         $response->setStatusCode(Response::HTTP_NO_CONTENT);
         return $response;
     }
+
+    /**
+     * @Route("/authors/", name="authors_index", methods={"GET"})
+     *
+     * @return Response
+     */
+    public function indexAction()
+    {
+        $em = $this->getDoctrine()->getManager();
+        $authors = $em
+            ->getRepository(Author::class)
+            ->findAll();
+      
+        return $this->render('authors/index.html.twig', ["authors" => $authors]);
+    }
 }

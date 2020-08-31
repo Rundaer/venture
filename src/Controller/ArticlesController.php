@@ -78,6 +78,21 @@ class ArticlesController extends AbstractController
     }
 
     /**
+     * @Route("/articles/", name="articles_index", methods={"GET"})
+     *
+     * @return Response
+     */
+    public function indexAction()
+    {
+        $em = $this->getDoctrine()->getManager();
+        $articles = $em
+            ->getRepository(Article::class)
+            ->findAll();
+      
+        return $this->render('articles/index.html.twig', ["articles" => $articles]);
+    }
+
+    /**
      * @Route("/articles/add", name="articles_add", methods={"POST", "GET"})
      *
      * @param Request $request
@@ -109,7 +124,7 @@ class ArticlesController extends AbstractController
     }
 
     /**
-     * @Route("/articles/edit/{id}", name="articles_edit")
+     * @Route("/articles/edit/{id}", name="articles_edit", methods={"GET", "PUT"})
      *
      * @param Request $request
      * @param Auction $auction
@@ -118,9 +133,11 @@ class ArticlesController extends AbstractController
      */
     public function editAction(Request $request, Article $article)
     {
-        $form = $this->createForm(ArticleFormType::class, $article);
+        $form = $this->createForm(ArticleFormType::class, $article, [
+            'method' => 'PUT'
+        ]);
 
-        if ($request->isMethod("post")) {
+        if ($request->isMethod("put")) {
             $form->handleRequest($request);
 
             if ($form->isValid()) {
@@ -130,7 +147,7 @@ class ArticlesController extends AbstractController
     
                 $this->addFlash("success", "Article has been edited");
     
-                return $this->redirectToRoute("home_index");
+                return $this->redirectToRoute("articles_index");
             }
 
             $this->addFlash("error", "Article hasn't been edited");
