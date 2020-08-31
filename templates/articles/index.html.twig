@@ -1,0 +1,42 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Article{% endblock %}
+
+{% block body %}
+
+    <a type="button" href="{{ url('articles_add')}}" class="btn btn-primary">Add new article</a>
+
+    <table class="table">
+    <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Title</th>
+            <th scope="col">Text</th>
+            <th scope="col">Created At</th>
+            <th scope="col">Authors</th>
+            <th scope="col">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for article in articles %}
+        <tr>
+            <th scope="row">{{article.id}}</th>
+            <td>{{article.title}}</td>
+            <td>{{ article.text|slice(0, 50) ~ '…'}}</td>
+            <td>{{ article.createdAt | date("Y-m-d")}}</td>
+            <td>
+                {% for author in article.authors %}
+                    {{author.name}},
+                {% endfor %}
+            </td>
+            <td>
+            <div class="btn-group" role="group" aria-label="Basic example">
+                <a type="button" href="{{ url('articles_edit', {"id": article.id} )}}" class="btn btn-small btn-secondary">Edit</a>
+            </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Index!{% endblock %}
+
+{% block body %}
+
+<div class="jumbotron">
+    <p class="lead">This is app for recruitment task.</p>
+    <hr class="my-4">
+    <p class="lead text-center">
+        <a class="btn btn-primary btn-lg" href="{{url('authors_index')}}" role="button">Check users</a>
+        <a class="btn btn-primary btn-lg" href="{{url('articles_index')}}" role="button">Check articles</a>
+    </p>
+</div>
+{% endblock %}
