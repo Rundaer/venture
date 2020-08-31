@@ -8,6 +8,13 @@ steps to make test enviroment
 ```
 > "php": ">=7.2.5"
 > composer
+> mysql database
+```
+
+## REMEMBER
+Change your database login/password
+```
+DATABASE_URL=mysql://venture:venture123@127.0.0.1:3306/ventureapp?serverVersion=mariadb-10.3.22
 ```
 
 ### Steps to start
