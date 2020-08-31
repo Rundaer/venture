@@ -80,10 +80,12 @@ class VentureController extends AbstractController
     public function getAuthors(AuthorRepository $authorRepository, Request $request)
     {
         $result = [];
-        if ($request->getQueryString()) {
-            $queryForNonValues = $this->variablesForQueryString($request->getQueryString());
-        } else {
+        // TO CHECK
+        $parametersToValidate = $request->query->all();
+        if (empty($parametersToValidate)) {
             $queryForNonValues = true;
+        } else {
+            $queryForNonValues = false;
         }
 
         // if any of possible query variables else get all
@@ -202,18 +204,5 @@ class VentureController extends AbstractController
         return $response;
     }
 
-    public function variablesForQueryString(string $queryString): bool
-    {
-        $checkForVars = true;
-        // Checks for any url query
-        $queries = explode('&', $queryString);
-        foreach ($queries as $query) {
-            $var = explode('=', $query);
-            if (in_array($var[0], Author::QUERY_POSIBILITIES)) {
-                $checkForVars = false;
-            }
-        }
-
-        return $checkForVars;
-    }
+  
 }
